@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Checkout - The Silicon Grand</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f4f4f4;
+    }
+    .form-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 12px;
+      background-color: #000;
+      color: white;
+      font-weight: bold;
+      border-radius: 8px;
+      transition: background-color 0.3s;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #444;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Guest Information</h2>
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" placeholder="Enter your name" required>
+    </div>
+    <div class="form-group">
+      <label for="number">Phone Number:</label>
+      <input type="tel" id="number" placeholder="Enter your number" required>
+    </div>
+    <div class="form-group">
+      <label for="email">Email:</label>
+      <input type="email" id="email" placeholder="Enter your email" required>
+    </div>
+    <div class="form-group">
+      <label for="checkin">Check-in Date:</label>
+      <input type="date" id="checkin" required>
+    </div>
+    <div class="form-group">
+      <label for="checkout">Check-out Date:</label>
+      <input type="date" id="checkout" required>
+    </div>
+    <div class="form-group">
+      <label for="roomType">Room Type:</label>
+      <select id="roomType">
+        <option value="A">Room A (₹2000 per night)</option>
+        <option value="B">Room B (₹6000 per night)</option>
+        <option value="C">Room C (₹14000 per night)</option>
+      </select>
+    </div>
+    <button onclick="calculatePrice()">Proceed to Payment</button>
+  </div>
+
+  <script>
+    const rates = { A: 2000, B: 6000, C: 14000 };
+
+    async function calculatePrice() {
+      const name = document.getElementById('name').value;
+      const phone = document.getElementById('number').value;
+      const email = document.getElementById('email').value;
+      const checkin = new Date(document.getElementById('checkin').value);
+      const checkout = new Date(document.getElementById('checkout').value);
+      const roomType = document.getElementById('roomType').value;
+
+      if (!checkin || !checkout || checkout <= checkin) {
+        alert('Invalid dates. Ensure the check-out is after check-in.');
+        return;
+      }
+
+      const nights = Math.ceil((checkout - checkin) / (1000 * 60 * 60 * 24));
+      const totalPrice = rates[roomType] * nights;
+
+      if (!confirm(`Confirm Booking:\nName: ${name}\nNights: ${nights}\nTotal: ₹${totalPrice}`)) {
+        return;
+      }
+
+      const response = await fetch('http://localhost:5001/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guest_name: name,
+          phone_number: phone,
+          email: email,
+          checkin_date: document.getElementById('checkin').value,
+          checkout_date: document.getElementById('checkout').value,
+          room_type: roomType,
+          nights: nights,
+          total_price: totalPrice,
+          payment_method: "UPI",
+          upi_id: "sample@upi",
+          payment_transaction_id: "TXN" + Date.now()
+        })
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert(`Booking Successful! Booking ID: ${result.bookingId}`);
+        window.location.href = 'payment.html';
+      } else {
+        alert('Booking failed: ' + result.error);
+      }
+    }
+  </script>
+</body>
+</html>
